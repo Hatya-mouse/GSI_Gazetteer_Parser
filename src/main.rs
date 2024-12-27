@@ -1,17 +1,26 @@
-use std::fs::File;
-use std::error::Error;
 use std::env;
-use std::path::Path;
-use pdf_extract::extract_text;
+use lopdf::Document;
+use anyhow::Result;
 
-fn main() -> Result<(), Box<dyn Error>> {
-    // Get the path from the argument
+fn main() -> Result<()> {
+    // Get the path from arguments
     let args: Vec<String> = env::args().collect();
-    let path = Path::new(&args[1]);
+    let path = &args[1];
 
-    // Extract the content text
-    let text = extract_text(path)?;
-    println!("Extracted text: {}", text);
-    
+    // Load the PDF document
+    let doc = Document::load(path)?;
+
+    // Process each page
+    for page_num in 1..=doc.get_pages().len() {
+        if let Ok(text) = extract_text_from_page(&doc, page_num.try_into().unwrap()) {
+            println!("=== Page {} ===", page_num);
+            println!("{}", text);
+        }
+    }
+
     Ok(())
+}
+
+fn extract_text_from_page(doc: &Document, page_num: u32) -> Result<String> {
+    Ok(doc.extract_text(&[page_num])?)
 }

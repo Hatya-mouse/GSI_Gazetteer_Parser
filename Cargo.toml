@@ -4,4 +4,5 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-pdf-extract = "0.7.11"
+lopdf = "=0.34.0"
+anyhow = "1.0"
