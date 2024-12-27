@@ -1,8 +1,9 @@
 use std::env;
 use std::fs::File;
 use std::io::Write;
+use std::path::Path;
 use lopdf::Document;
-use anyhow::{Result, Context};
+use anyhow::{Result, Context, bail};
 
 /// Main function to parse and extract text from a PDF file
 /// starting from a specified page number.
@@ -37,6 +38,12 @@ fn main() -> Result<()> {
 
     // Extract path and starting page number from arguments
     let path = &args[1];
+    
+    // Check if file exists
+    if !Path::new(path).exists() {
+        bail!("File not found: {}", path);
+    }
+
     let start_page: u32 = args[2]
         .parse()
         .context("Failed to parse start page number")?;
