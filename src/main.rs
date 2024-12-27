@@ -12,9 +12,28 @@ fn main() -> Result<()> {
     
     // Validate command line arguments
     if args.len() < 3 {
-        println!("Usage: {} <pdf_path> <start_page>", args[0]);
+        println!("Usage: {} <path-to-the-file> <start_page> [-r|--remove-suffix] [-o|--output-path <output-path>]", args[0]);
         std::process::exit(1);
     }
+
+    // Check remove suffix flag
+    let remove_suffix = args.iter().any(|arg| arg == "-r" || arg == "--remove-suffix");
+
+    // Get output path from arguments
+    let output_path = {
+        let mut iter = args.iter().enumerate();
+        loop {
+            match iter.next() {
+                Some((_, arg)) if arg == "-o" || arg == "--output-path" => {
+                    if let Some((_, path)) = iter.next() {
+                        break path.to_string();
+                    }
+                }
+                None => break "city_names.csv".to_string(),
+                _ => continue,
+            }
+        }
+    };
 
     // Extract path and starting page number from arguments
     let path = &args[1];
@@ -65,7 +84,7 @@ fn main() -> Result<()> {
                         
                         // Check if this is a city entry and process it
                         if is_city(&line_array) {
-                            let (japanese_name, english_name) = process_line(&line_array);
+                            let (japanese_name, english_name) = process_line(&line_array, remove_suffix);
                             japanese_names.push(japanese_name);
                             english_names.push(english_name);
                         }
@@ -77,7 +96,7 @@ fn main() -> Result<()> {
     }
 
     // Save to CSV file
-    save_to_csv(&japanese_names, &english_names)?;
+    save_to_csv(&japanese_names, &english_names, &output_path)?;
 
     Ok(())
 }
@@ -89,20 +108,22 @@ fn is_city(line_string: &[String; 8]) -> bool {
 }
 
 /// Processes a line and extracts Japanese and English names
-fn process_line(line_string: &[String; 8]) -> (String, String) {
-    // Extract English name (first word only)
-    let english_name = line_string[4].split(' ').next().unwrap_or("").to_string();
-    
+fn process_line(line_string: &[String; 8], remove_suffix: bool) -> (String, String) {
     // Get Japanese name and remove city/town/village suffixes
-    let japanese_name = line_string[2].clone();
-    let cleaned_japanese_name = remove_municipality_suffix(&japanese_name);
-    
-    (cleaned_japanese_name, english_name)
+    let mut english_name = line_string[4].clone();
+    let mut japanese_name = line_string[2].clone();
+    if remove_suffix {
+        // Extract English name (first word only)
+        english_name = line_string[4].split(' ').next().unwrap_or("").to_string();
+        // Remove suffix from japanese name
+        japanese_name = remove_municipality_suffix(&japanese_name);
+    }
+    (japanese_name, english_name)
 }
 
 /// Removes municipality suffixes from Japanese place names
 fn remove_municipality_suffix(name: &str) -> String {
-    let suffixes = ["市", "町", "村", "区", "郡"];
+    let suffixes = ["市", "町", "村", "区", "郡", "県", "都", "道", "府"];
     for suffix in suffixes.iter() {
         if name.ends_with(suffix) {
             return name[..name.len() - suffix.len()].to_string();
@@ -112,8 +133,8 @@ fn remove_municipality_suffix(name: &str) -> String {
 }
 
 /// Saves the extracted names to a CSV file
-fn save_to_csv(japanese_names: &[String], english_names: &[String]) -> Result<()> {
-    let mut file = File::create("city_names.csv")?;
+fn save_to_csv(japanese_names: &[String], english_names: &[String], output_path: &str) -> Result<()> {
+    let mut file = File::create(output_path)?;
     
     // Write CSV header
     writeln!(file, "ja,en")?;
@@ -123,7 +144,7 @@ fn save_to_csv(japanese_names: &[String], english_names: &[String]) -> Result<()
         writeln!(file, "{},{}", ja, en)?;
     }
     
-    println!("CSV file has been created successfully!");
+    println!("CSV file has been created successfully at: {}", output_path);
     Ok(())
 }
 
