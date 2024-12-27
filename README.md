@@ -31,21 +31,25 @@ cargo build --release
 
 ## Usage
 
-Run the tool by specifying the PDF file path and **the page number of the start of the list**:
+Run the tool by specifying the PDF file path and **the page number of the start of the list**. Additional options are available for customizing the output:
 
 ```bash
-cargo run -- <path-to-the-file> <page-number>
+cargo run -- <path-to-the-file> <page-number> [options]
+
+Options:
+-r, --remove-suffix    Remove municipality suffixes (e.g., Shi, Machi)
+-o, --output-path <path>    Specify custom output path for the CSV file
 ```
 
 Example:
 ```bash
-cargo run -- ./gazetteer.pdf 8
+cargo run -- ./gazetteer.pdf 8 --remove-suffix --output-path ./output/names.csv
 ```
 
 ## Output Format
 
-The tool generates a CSV file containing the following columns:
-- Japanese Name (ja): The geographical name in Japanese (Without municipality suffix, such as Shi or Machi)
+The tool generates a CSV file with the following columns:
+- Japanese Name (ja): The geographical name in Japanese
 - English Name (en): The corresponding English name
 
 Example output：
@@ -89,19 +93,23 @@ cargo build --release
 
 ## 使用
 
-PDFのファイルへのパスと、地名リストの**最初の**ページ番号を設定して実行します。
+PDFのファイルへのパスと、地名リストの**最初の**ページ番号を設定して実行します。以下のオプションで出力をカスタマイズできます：
 
 ```bash
-cargo run -- <path-to-the-file> <page-number>
+cargo run -- <path-to-the-file> <page-number> [options]
+
+オプション：
+-r, --remove-suffix    「市」「村」「県」などの接尾辞を除去します。
+-o, --output-path <path>    CSVファイルの出力先を指定します。このオプションを設定しなかった場合は、カレントディレクトリに出力されます。
 ```
 
 例：
 ```bash
-cargo run -- ./gazetteer.pdf 8
+cargo run -- ./gazetteer.pdf 8 --remove-suffix --output-path ./output/names.csv
 ```
 
-このツールは以下の情報を含むCSVファイルを生成します：
-* 日本語名 (ja): 日本語での地名（市や町などの接尾辞を除く）
+このツールは以下の情報を含むCSVファイルを生成します。
+* 日本語名 (ja): 日本語での地名（-r/--remove-suffixオプションで市区町村などの接尾辞を除去可能）
 * 英語名 (en): 対応する英語名
 
 ## 出力フォーマット
