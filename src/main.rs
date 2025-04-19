@@ -1,16 +1,16 @@
+use anyhow::{bail, Context, Result};
+use lopdf::Document;
 use std::env;
 use std::fs::File;
 use std::io::Write;
 use std::path::Path;
-use lopdf::Document;
-use anyhow::{Result, Context, bail};
 
 /// Main function to parse and extract text from a PDF file
 /// starting from a specified page number.
 fn main() -> Result<()> {
     // Collect command line arguments
     let args: Vec<String> = env::args().collect();
-    
+
     // Validate command line arguments
     if args.len() < 3 {
         println!("Usage: {} <path-to-the-file> <start_page> [-r|--remove-suffix] [-o|--output-path <output-path>]", args[0]);
@@ -18,7 +18,9 @@ fn main() -> Result<()> {
     }
 
     // Check remove suffix flag
-    let remove_suffix = args.iter().any(|arg| arg == "-r" || arg == "--remove-suffix");
+    let remove_suffix = args
+        .iter()
+        .any(|arg| arg == "-r" || arg == "--remove-suffix");
 
     // Get output path from arguments
     let output_path = {
@@ -38,7 +40,7 @@ fn main() -> Result<()> {
 
     // Extract path and starting page number from arguments
     let path = &args[1];
-    
+
     // Check if file exists
     if !Path::new(path).exists() {
         bail!("File not found: {}", path);
@@ -51,7 +53,7 @@ fn main() -> Result<()> {
     // Load the PDF document
     let doc = Document::load(path)?;
     let pages = doc.get_pages();
-    
+
     // Display basic information about the document
     println!("Total pages: {}", pages.len());
     println!("Starting from page: {}", start_page);
@@ -70,9 +72,7 @@ fn main() -> Result<()> {
         // Extract and process text from the current page
         match extract_text_from_page(&doc, *page_num) {
             Ok(text) => {
-                let parts: Vec<String> = text.split('\n')
-                    .map(String::from)
-                    .collect();
+                let parts: Vec<String> = text.split('\n').map(String::from).collect();
 
                 // Process text in chunks of 8 lines (based on PDF structure)
                 for chunk in parts.chunks(8) {
@@ -88,16 +88,17 @@ fn main() -> Result<()> {
                             chunk[6].clone(),
                             chunk[7].clone(),
                         ];
-                        
+
                         // Check if this is a city entry and process it
                         if is_city(&line_array) {
-                            let (japanese_name, english_name) = process_line(&line_array, remove_suffix);
+                            let (japanese_name, english_name) =
+                                process_line(&line_array, remove_suffix);
                             japanese_names.push(japanese_name);
                             english_names.push(english_name);
                         }
                     }
                 }
-            },
+            }
             Err(e) => println!("Error processing page {}: {}", page_num, e),
         }
     }
@@ -140,17 +141,21 @@ fn remove_municipality_suffix(name: &str) -> String {
 }
 
 /// Saves the extracted names to a CSV file
-fn save_to_csv(japanese_names: &[String], english_names: &[String], output_path: &str) -> Result<()> {
+fn save_to_csv(
+    japanese_names: &[String],
+    english_names: &[String],
+    output_path: &str,
+) -> Result<()> {
     let mut file = File::create(output_path)?;
-    
+
     // Write CSV header
-    writeln!(file, "ja,en")?;
-    
+    writeln!(file, "en,ja")?;
+
     // Write data rows
-    for (ja, en) in japanese_names.iter().zip(english_names.iter()) {
-        writeln!(file, "{},{}", ja, en)?;
+    for (en, ja) in english_names.iter().zip(japanese_names.iter()) {
+        writeln!(file, "{},{}", en, ja)?;
     }
-    
+
     println!("CSV file has been created successfully at: {}", output_path);
     Ok(())
 }
